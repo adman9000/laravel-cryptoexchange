@@ -15,7 +15,7 @@
         "adman9000/laravel-binance": "dev-master",
         "adman9000/laravel-bittrex": "dev-master",
         "adman9000/laravel-cryptopia": "dev-master",
-        "adman9000/laravel-kraken": "dev-master",
+        "adman9000/laravel-kraken": "dev-master"
 	},
 	"autoload": {
 		"psr-4": {
