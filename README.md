@@ -12,8 +12,11 @@ composer require adman9000/laravel-cryptoexchange
 ## Requires
 
 https://github.com/adman9000/laravel-binance
+
 https://github.com/adman9000/laravel-cryptopia
+
 https://github.com/adman9000/laravel-kraken
+
 https://github.com/adman9000/laravel-bittrex
 
 ## Features
