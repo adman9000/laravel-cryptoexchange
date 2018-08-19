@@ -71,14 +71,31 @@ class CryptoExchange
         $this->api->setAPI($this->key, $this->secret);
 
     }
-       
+	   
    
       public function __call($name, $arguments)
     {
         $this->function = $name;
 
         try {
-            $result = $this->api->$name($arguments);
+           
+           //Work this into a separate function
+            if(($this->exchange == "kraken") && ($this->function == "getTickers")) {
+
+                //Kraken is crap, needs the list of markets for the ticker so got to do 2 api calls (unless the argument is set already)
+                if(!isset($arguments[0])) {
+                    
+                    $temp = $this->getMarkets();
+                    
+                    foreach($temp['data'] as $market) {
+                        $markets[] = $market['code'];
+                    }
+                    $arguments[0] = $markets;
+                }
+                $this->function = "getTickers"; //needs to be reset to do correct formatting
+            }
+
+            $result = call_user_func_array([$this->api, $name],$arguments);
 
         } catch( \Exception $e) {
             $result = [];
@@ -87,7 +104,7 @@ class CryptoExchange
             return $result;
         }
 
-        return $this->formatResult($result, "currencies");
+        return $this->formatResult($result);
 
     }
 
@@ -103,7 +120,6 @@ class CryptoExchange
     function formatResult($result) {
 
         $response = [];
-
 
         switch($this->exchange) {
 
@@ -126,6 +142,30 @@ class CryptoExchange
                         }
 
                     break;
+
+                case "getMarkets" :
+
+                        foreach($result['result'] as $code=>$data) {
+
+                            $asset['code'] = $code;
+                            $asset['base'] = $data['base'];
+                            $asset['alt'] = $data['quote'];
+                            $response['data'][] = $asset;
+                        }
+
+                    break;
+
+                    case "getTicker" :
+                    case "getTickers" :
+                            foreach($result['result'] as $code=>$data) {
+
+                                $asset['code'] = $code;
+                                $asset['price'] = $data['c'][0];
+                                $response['data'][] = $asset;
+                            }
+
+                        break;
+
                     }
 
                 }
@@ -157,6 +197,31 @@ class CryptoExchange
                             }
 
                         break;
+
+                    case "getMarkets" :
+
+                        foreach($result as $data) {
+
+                            $asset['code'] = $data['symbol'];
+                            $asset['base'] = $data['baseAsset'];
+                            $asset['alt'] = $data['quoteAsset'];
+                            $response['data'][] = $asset;
+                        }
+
+                    break;
+
+                    case "getTicker" :
+                    case "getTickers" :
+
+                            foreach($result as $data) {
+
+                                $asset['code'] = $data['symbol'];
+                                $asset['price'] = $data['price'];
+                                $response['data'][] = $asset;
+                            }
+
+                        break;
+
                     }
 
 
@@ -185,6 +250,29 @@ class CryptoExchange
                                 $asset['code'] = $data['Currency'];
                                 $asset['title'] = $data['CurrencyLong'];
                                 $asset['decimals'] = false;
+                                $response['data'][] = $asset;
+                            }
+
+                        break;
+
+                    case "getMarkets" :
+
+                        foreach($result['result'] as $data) {
+
+                            $asset['code'] = $data['MarketName'];
+                            $asset['base'] = $data['BaseCurrency'];
+                            $asset['alt'] = $data['MarketCurrency'];
+                            $response['data'][] = $asset;
+                        }
+
+                    break;
+
+                    case "getTicker" :
+                    case "getTickers" :
+                            foreach($result['result'] as $data) {
+
+                                $asset['code'] = $data['MarketName'];
+                                $asset['price'] = $data['Last'];
                                 $response['data'][] = $asset;
                             }
 
@@ -220,6 +308,31 @@ class CryptoExchange
                             }
 
                         break;
+
+                    case "getMarkets" :
+
+                        foreach($result as $data) {
+
+                            $asset['code'] = $data['Label'];
+                            $asset['base'] = $data['BaseSymbol'];
+                            $asset['alt'] = $data['Symbol'];
+                            $response['data'][] = $asset;
+                        }
+
+                    break;
+
+                    case "getTicker" :
+                    case "getTickers" :
+
+                            foreach($result as $data) {
+
+                                $asset['code'] = $data['Label'];
+                                $asset['price'] = $data['LastPrice'];
+                                $response['data'][] = $asset;
+                            }
+
+                        break;
+
                     }
 
                 }
