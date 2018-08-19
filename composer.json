@@ -28,7 +28,8 @@
             "adman9000\\cryptoexchange\\CryptoexchangeServiceProvider"
         ],
         "aliases": {
-            "Binance": "adman9000\\cryptoexchange\\CryptoexchangeFacade"
+            "Cryptoexchange": "adman9000\\cryptoexchange\\CryptoexchangeFacade"
         }
+    }
     }
 }
