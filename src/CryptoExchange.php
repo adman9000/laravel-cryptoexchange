@@ -1,12 +1,18 @@
 <?php 
 namespace adman9000\cryptoexchange;
 
+use adman9000\cryptopia\CryptopiaAPI;
+use adman9000\kraken\KrakenAPI;
+use adman9000\binance\BinanceAPI;
+use adman9000\bittrex\BittrexAPI;
+
 class CryptoExchange
 {
     protected $exchange;     // kraken/binance/bittrex/cryptopia
     protected $key;     // API key
     protected $secret;  // API secret
     protected $api; //the api in use
+    protected $function;
 
     /**
      * Constructor for CryptoExchange
@@ -22,7 +28,7 @@ class CryptoExchange
 
     function __destruct()
     {
-        curl_close($this->curl);
+        
     }
 
      /**
@@ -62,66 +68,173 @@ class CryptoExchange
                 break;
         }
 
-        $this->api->setAPI($this->api_key, $this->api_secret);
+        $this->api->setAPI($this->key, $this->secret);
 
     }
-	   
+       
    
+      public function __call($name, $arguments)
+    {
+        $this->function = $name;
+
+        try {
+            $result = $this->api->$name($arguments);
+
+        } catch( \Exception $e) {
+            $result = [];
+            $result['fail'] = true;
+            $result['errors'][] = $e->getMessage();
+            return $result;
+        }
+
+        return $this->formatResult($result, "currencies");
+
+    }
+
+
+
 
     /**
-     ---------- PUBLIC FUNCTIONS ----------
-    * getTicker
-    * getTickers
-    * getCurrencies
-    * getMarkets
-    *
-    *
-    *
-    * 
-     **/
-
-
-     /**
-     * Get ticker
-     *
-     * @param asset pair code
-     * @return asset pair ticker info
+     * formatResult();
+     * @param $result
+     * @param result type
+     * Consistent format for results across all APIs
      */
-    public function getTicker($code)
-    {
-        return $this->api->getTickers($code);
-    }
+    function formatResult($result) {
 
-     /**
-     * Get tickers
-     *
-     * @param array $pairs
-     * @return array of ticker info by pair codes
-     */
-    public function getTickers(array $pairs)
-    {
-        return $this->api->getTickers($pairs);
-    }
+        $response = [];
 
 
-	/**
-     * Get currencies listed on this exchange
-     *
-     * @return array of asset names and their info
-     */
-    public function getCurrencies()
-    {
-        return $this->api->getCurrencies();
-    }
+        switch($this->exchange) {
 
-  
-	 /**
-     * getMarkets()
-     * @return array of trading pairs available on this exchange
-     **/
-    public function getMarkets(array $pairs=null)
-    {
-        return $this->api->getMarkets($pairs, 'info');
+            case "kraken" :
+
+                if(sizeof($result['error'])==0) {
+                    $response['success'] = true;
+                    $response['data'] = [];
+
+                    switch($this->function) {
+
+                    case "getCurrencies" :
+
+                        foreach($result['result'] as $code=>$data) {
+
+                            $asset['code'] = $code;
+                            $asset['title'] = $data['altname'];
+                            $asset['decimals'] = $data['decimals'];
+                            $response['data'][] = $asset;
+                        }
+
+                    break;
+                    }
+
+                }
+                else {
+                    $response['fail'] = true;
+                    $response['errors'] = $result['error'];
+                }
+
+                
+
+            break;
+
+            case "binance" :
+
+                if(sizeof($result)>0) {
+                    $response['success'] = true;
+                    $response['data'] = [];
+
+                    switch($this->function) {
+
+                    case "getCurrencies" :
+
+                            foreach($result as $data) {
+
+                                $asset['code'] = $data['code'];
+                                $asset['title'] = $data['name'];
+                                $asset['decimals'] = false;
+                                $response['data'][] = $asset;
+                            }
+
+                        break;
+                    }
+
+
+                }
+                else {
+                    $response['fail'] = true;
+                    $response['errors'] = $result['error'];
+                }
+
+                
+
+            break;
+
+            case "bittrex" :
+
+                if($result['success']) {
+                    $response['success'] = true;
+                    $response['data'] = [];
+
+                    switch($this->function) {
+
+                    case "getCurrencies" :
+
+                            foreach($result['result'] as $data) {
+
+                                $asset['code'] = $data['Currency'];
+                                $asset['title'] = $data['CurrencyLong'];
+                                $asset['decimals'] = false;
+                                $response['data'][] = $asset;
+                            }
+
+                        break;
+                    }
+
+
+                }
+                else {
+                    $response['fail'] = true;
+                    $response['errors'][] = $result['message'];
+                }
+
+                
+            break;
+
+            case "cryptopia" :
+
+                if(sizeof($result)>0) {
+                    $response['success'] = true;
+                    $response['data'] = [];
+
+                    switch($this->function) {
+
+                    case "getCurrencies" :
+
+                            foreach($result as $data) {
+
+                                $asset['code'] = $data['Symbol'];
+                                $asset['title'] = $data['Name'];
+                                $asset['decimals'] = false;
+                                $response['data'][] = $asset;
+                            }
+
+                        break;
+                    }
+
+                }
+                else {
+                    $response['fail'] = true;
+                    $response['errors'][] = "error";
+                }
+
+                
+
+            break;
+
+        }
+
+        return $response;
     }
 
   
