@@ -12,10 +12,10 @@
     "minimum-stability": "dev",
     "require": {
 		"php": ">=5.3.0",
-        "adman9000/laravel-binance": "dev-master",
-        "adman9000/laravel-bittrex": "dev-master",
-        "adman9000/laravel-cryptopia": "dev-master",
-        "adman9000/laravel-kraken": "dev-master"
+        "adman9000/laravel-binance": "dev-withdrawals",
+        "adman9000/laravel-bittrex": "dev-withdrawals",
+        "adman9000/laravel-cryptopia": "dev-withdrawals",
+        "adman9000/laravel-kraken": "dev-withdrawals"
 	},
 	"autoload": {
 		"psr-4": {
