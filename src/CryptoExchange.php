@@ -14,6 +14,7 @@ class CryptoExchange
     protected $api; //the api in use
     protected $function;
 
+    protected $btc_usd_codes;
     /**
      * Constructor for CryptoExchange
      *
@@ -24,6 +25,14 @@ class CryptoExchange
     function __construct($exchange, $key=false, $secret=false)
     {
         $this->setExchange($exchange, $key, $secret);
+
+        $this->btc_usd_codes = [
+            'kraken' => 'XBTUSD',
+            'binance' => 'BTCUSDT',
+            'bittrex' => 'USDT-BTC',
+            'cryptopia' => 'BTC/USDT'
+        ];
+
     }
 
     function __destruct()
@@ -72,7 +81,12 @@ class CryptoExchange
 
     }
 	   
+    function setAPIKey($key, $secret) {
+
+        $this->api->setAPI($key, $secret);
+    }
    
+
       public function __call($name, $arguments)
     {
         $this->function = $name;
@@ -109,6 +123,18 @@ class CryptoExchange
     }
 
 
+    /** Custom functions **/
+
+    /** getBTCUSDTicker()
+     **/
+    function getBTCUSDTicker() {
+
+        //Different exchanges have different codes
+        $code = $this->btc_usd_codes[$this->exchange];
+
+        return $this->getTicker($code);
+
+    }
 
 
     /**
@@ -120,6 +146,7 @@ class CryptoExchange
     function formatResult($result) {
 
         $response = [];
+
 
         switch($this->exchange) {
 
@@ -143,14 +170,14 @@ class CryptoExchange
 
                     break;
 
-                case "getMarkets" :
+                    case "getMarkets" :
 
                         foreach($result['result'] as $code=>$data) {
 
                             $asset['code'] = $code;
                             $asset['base'] = $data['base'];
                             $asset['alt'] = $data['quote'];
-                            $response['data'][] = $asset;
+                            $response['data'][$asset['code']] = $asset;
                         }
 
                     break;
@@ -161,9 +188,28 @@ class CryptoExchange
 
                                 $asset['code'] = $code;
                                 $asset['price'] = $data['c'][0];
-                                $response['data'][] = $asset;
+                                $response['data'][$asset['code']] = $asset;
                             }
 
+                        break;
+
+                    case "getBalances" :
+
+                        foreach($result['result'] as $code=>$balance) {
+                            $asset['code'] = $code;
+                            $asset['balance'] = $balance;
+                            $asset['available'] = $balance;
+                            $asset['locked'] = 0;
+                            $response['data'][$asset['code']] = $asset;
+                        }
+
+                        break;
+
+
+                    case "depositAddress" :
+                            $asset['code'] = '';
+                            $asset['address'] = $result['result'][0]['address'];
+                            $response['data'] = $asset;
                         break;
 
                     }
@@ -205,7 +251,7 @@ class CryptoExchange
                             $asset['code'] = $data['symbol'];
                             $asset['base'] = $data['baseAsset'];
                             $asset['alt'] = $data['quoteAsset'];
-                            $response['data'][] = $asset;
+                            $response['data'][$asset['code']] = $asset;
                         }
 
                     break;
@@ -217,9 +263,27 @@ class CryptoExchange
 
                                 $asset['code'] = $data['symbol'];
                                 $asset['price'] = $data['price'];
-                                $response['data'][] = $asset;
+                                $response['data'][$asset['code']] = $asset;
                             }
 
+                        break;
+
+                    case "getBalances" :
+
+                        foreach($result as $data) {
+                            $asset['code'] = $data['asset'];
+                            $asset['available'] = $data['free'];
+                            $asset['locked'] = $data['locked'];
+                            $asset['balance'] = $asset['locked'] + $asset['available'];
+                            $response['data'][$asset['code']] = $asset;
+                        }
+
+                        break;
+
+                    case "depositAddress" :
+                            $asset['code'] = $result['asset'];
+                            $asset['address'] = $result['address'];
+                            $response['data'] = $asset;
                         break;
 
                     }
@@ -262,7 +326,7 @@ class CryptoExchange
                             $asset['code'] = $data['MarketName'];
                             $asset['base'] = $data['BaseCurrency'];
                             $asset['alt'] = $data['MarketCurrency'];
-                            $response['data'][] = $asset;
+                            $response['data'][$asset['code']] = $asset;
                         }
 
                     break;
@@ -273,9 +337,27 @@ class CryptoExchange
 
                                 $asset['code'] = $data['MarketName'];
                                 $asset['price'] = $data['Last'];
-                                $response['data'][] = $asset;
+                                $response['data'][$asset['code']] = $asset;
                             }
 
+                        break;
+
+                    case "getBalances" :
+
+                        foreach($result['result'] as $data) {
+                            $asset['code'] = $data['Currency'];
+                            $asset['available'] = $data['Pending'];
+                            $asset['locked'] = $data['Available'];
+                            $asset['balance'] = $data['Balance'];
+                            $response['data'][$asset['code']] = $asset;
+                        }
+
+                        break;
+
+                    case "depositAddress" :
+                            $asset['code'] = $result['result']['Currency'];
+                            $asset['address'] = $result['result']['Address'];
+                            $response['data'] = $asset;
                         break;
                     }
 
@@ -316,7 +398,7 @@ class CryptoExchange
                             $asset['code'] = $data['Label'];
                             $asset['base'] = $data['BaseSymbol'];
                             $asset['alt'] = $data['Symbol'];
-                            $response['data'][] = $asset;
+                            $response['data'][$asset['code']] = $asset;
                         }
 
                     break;
@@ -328,9 +410,27 @@ class CryptoExchange
 
                                 $asset['code'] = $data['Label'];
                                 $asset['price'] = $data['LastPrice'];
-                                $response['data'][] = $asset;
+                                $response['data'][$asset['code']] = $asset;
                             }
 
+                        break;
+
+                    case "getBalances" :
+
+                        foreach($result as $data) {
+                            $asset['code'] = $data['Symbol'];
+                            $asset['available'] = $data['Available'];
+                            $asset['locked'] = $data['Unconfirmed'] + $data['HeldForTrades'] + $data['PendingWithdraw'];
+                            $asset['balance'] = $data['Total'];
+                            $response['data'][$asset['code']] = $asset;
+                        }
+
+                        break;
+
+                    case "depositAddress" :
+                            $asset['code'] = $result['Data']['Currency'];
+                            $asset['address'] = $result['Data']['Address'];
+                            $response['data'] = $asset;
                         break;
 
                     }
